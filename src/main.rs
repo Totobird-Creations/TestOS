@@ -4,8 +4,12 @@
 
 #![no_std]
 #![no_main]
+#![feature(decl_macro)]
 
 use core::panic::PanicInfo;
+
+mod vga;
+
 
 // Freeze and do nothing on panic.
 #[panic_handler]
@@ -16,14 +20,10 @@ fn panic(_info: &PanicInfo) -> ! {
 // Entry
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    let vga_buffer = 0xb8000 as *mut u8;
 
-    for (i, &byte) in b"Hello World!".iter().enumerate() {
-        unsafe {
-            *vga_buffer.offset(i as isize * 2)     = byte;
-            *vga_buffer.offset(i as isize * 2 + 1) = 0xb;
-        }
-    }
+    vga::println("Text printed to screen.");
+    vga::println("Next line.");
+    vga::println("Hello World!");
 
     loop {}
 }
