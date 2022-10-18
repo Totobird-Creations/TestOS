@@ -21,9 +21,9 @@ fn panic(_info: &PanicInfo) -> ! {
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
 
-    vga::println("Text printed to screen.");
-    vga::println("Next line.");
-    vga::println("Hello World!");
+    vga::print!("Text printed to screen.\n");
+    vga::print!("Next line.\n");
+    vga::print!("Hello World!\n");
 
     loop {}
 }
