@@ -1,3 +1,5 @@
+use core::fmt;
+
 use volatile::Volatile;
 use lazy_static::lazy_static;
 use spin::Mutex;
@@ -83,7 +85,7 @@ impl ScreenWriter {
             }
         }
     }
-    pub fn write_str(&mut self, s : &str) {
+    fn _write_str(&mut self, s : &str) {
         for byte in s.bytes() {
             match byte {
                 0x20..=0x7e | b'\n' => self.write_byte(byte),
@@ -117,12 +119,22 @@ impl ScreenWriter {
         self.colour = ColourCode::new(fg, bg);
     }
 }
-
-
-pub macro print {
-    ($text:expr) => {
-        WRITER.lock().write_str($text);
+impl fmt::Write for ScreenWriter {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self._write_str(s);
+        Ok(())
     }
+}
+
+
+#[macro_export]
+pub macro print {
+    ($($arg:tt)*) => ($crate::vga::_print(format_args!($($arg)*)))
+}
+#[doc(hidden)]
+pub fn _print(args : fmt::Arguments) {
+    use core::fmt::Write;
+    WRITER.lock().write_fmt(args).unwrap();
 }
 pub macro colour {
     () => {

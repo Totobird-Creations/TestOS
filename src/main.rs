@@ -8,6 +8,7 @@
 
 #![feature(custom_test_frameworks)]
 #![test_runner(crate::test::runner)]
+#![reexport_test_harness_main = "init_test"]
 mod test;
 
 
@@ -15,6 +16,7 @@ use core::panic::PanicInfo;
 
 mod vga;
 mod exception;
+mod init;
 
 
 // Freeze and do nothing on panic.
@@ -26,18 +28,12 @@ fn panic(_info: &PanicInfo) -> ! {
 // Entry
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    exception::init();
 
-    vga::print!("Text printed to screen.\n");
-    vga::colour!(Red, Cyan);
-    vga::print!("Hello ");
-    vga::colour!(Blue, Green);
-    vga::print!("World!");
-    vga::colour!();
-    vga::print!("\n");
-    vga::colour!(Pink, Magenta);
-    vga::print!("Third line.");
-    vga::colour!();
-    vga::print!("\n");
+    #[cfg(test)]
+    init_test();
+
+    init::main();
 
     loop {}
 }
