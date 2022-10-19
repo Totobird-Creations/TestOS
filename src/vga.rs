@@ -8,7 +8,7 @@ const BUFFER_SIZE : (usize, usize) = (80, 25);
 lazy_static! {
     pub static ref WRITER : Mutex<ScreenWriter> = Mutex::new(ScreenWriter {
         column : 0,
-        colour : ColourCode::new(Colour::Yellow, Colour::Black),
+        colour : ColourCode::new(Colour::White, Colour::Black),
         buffer : unsafe {&mut *(0xb8000 as *mut ScreenBuffer)},
     });
 }
@@ -62,8 +62,9 @@ pub struct ScreenWriter {
     colour  : ColourCode,
     buffer  : &'static mut ScreenBuffer,
 }
+#[allow(unused)]
 impl ScreenWriter {
-    pub fn write_byte(&mut self, byte : u8) {
+    fn write_byte(&mut self, byte : u8) {
         match byte {
             b'\n' => self.new_line(),
             byte  => {
@@ -111,11 +112,23 @@ impl ScreenWriter {
             self.buffer.chars[y][x].write(blank);
         }
     }
+
+    pub fn set_colour(&mut self, fg : Colour, bg : Colour) {
+        self.colour = ColourCode::new(fg, bg);
+    }
 }
 
 
 pub macro print {
     ($text:expr) => {
         WRITER.lock().write_str($text);
+    }
+}
+pub macro colour {
+    () => {
+        WRITER.lock().set_colour(Colour::White, Colour::Black);
+    },
+    ($fg:ident, $bg:ident) => {
+        WRITER.lock().set_colour(Colour::$fg, Colour::$bg);
     }
 }

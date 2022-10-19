@@ -4,11 +4,17 @@
 
 #![no_std]
 #![no_main]
-#![feature(decl_macro)]
+#![feature(decl_macro, abi_x86_interrupt)]
+
+#![feature(custom_test_frameworks)]
+#![test_runner(crate::test::runner)]
+mod test;
+
 
 use core::panic::PanicInfo;
 
 mod vga;
+mod exception;
 
 
 // Freeze and do nothing on panic.
@@ -22,8 +28,16 @@ fn panic(_info: &PanicInfo) -> ! {
 pub extern "C" fn _start() -> ! {
 
     vga::print!("Text printed to screen.\n");
-    vga::print!("Next line.\n");
-    vga::print!("Hello World!\n");
+    vga::colour!(Red, Cyan);
+    vga::print!("Hello ");
+    vga::colour!(Blue, Green);
+    vga::print!("World!");
+    vga::colour!();
+    vga::print!("\n");
+    vga::colour!(Pink, Magenta);
+    vga::print!("Third line.");
+    vga::colour!();
+    vga::print!("\n");
 
     loop {}
 }
