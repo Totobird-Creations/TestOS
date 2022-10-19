@@ -11,14 +11,6 @@ pub fn main() {
     vga::colour!();
     vga::print!("\n");
     vga::colour!(Pink, Magenta);
-
-    // Working on `https://os.phil-opp.com/double-fault-exceptions/#a-stack-overflow-test`
-
-    fn stack_overflow() {
-        stack_overflow();
-    }
-    stack_overflow();
-
     vga::print!("Third line.");
     vga::colour!();
     vga::print!("\n");

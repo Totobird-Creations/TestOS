@@ -1,9 +1,6 @@
 #[cfg(test)]
 use crate::vga;
 
-use x86_64;
-
-
 #[cfg(test)]
 pub fn runner(tests : &[&dyn Fn()]) {
     vga::colour!(Cyan, Black);
@@ -32,9 +29,10 @@ fn trivial() {
 fn exception() {
     vga::print!("exception ... ");
     // CPU Interrupt
-    x86_64::instructions::interrupts::int3();
+    //x86_64::instructions::interrupts::int3();
     // Double Fault
-    unsafe {
+    /*unsafe {
         *(0xdeadbeef as *mut u64) = 42;
-    };
+    };*/
+    // TODO : Stack overflow test
 }

@@ -3,6 +3,7 @@ use core::fmt;
 use volatile::Volatile;
 use lazy_static::lazy_static;
 use spin::Mutex;
+use x86_64::instructions::interrupts;
 
 
 const BUFFER_SIZE : (usize, usize) = (80, 25);
@@ -134,7 +135,9 @@ pub macro print {
 #[doc(hidden)]
 pub fn _print(args : fmt::Arguments) {
     use core::fmt::Write;
-    WRITER.lock().write_fmt(args).unwrap();
+    interrupts::without_interrupts(|| {
+        WRITER.lock().write_fmt(args).unwrap();
+    });
 }
 pub macro colour {
     () => {
