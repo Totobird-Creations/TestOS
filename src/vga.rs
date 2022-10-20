@@ -1,4 +1,7 @@
-use core::fmt;
+use core::fmt::{
+    self,
+    Write
+};
 
 use volatile::Volatile;
 use lazy_static::lazy_static;
@@ -6,7 +9,7 @@ use spin::Mutex;
 use x86_64::instructions::interrupts;
 
 
-const BUFFER_SIZE : (usize, usize) = (80, 25);
+pub const BUFFER_SIZE : (usize, usize) = (80, 25);
 
 lazy_static! {
     pub static ref WRITER : Mutex<ScreenWriter> = Mutex::new(ScreenWriter {
@@ -68,10 +71,10 @@ pub struct ScreenWriter {
 #[allow(unused)]
 impl ScreenWriter {
     fn write_byte(&mut self, byte : u8) {
-        match byte {
+        match (byte) {
             b'\n' => self.new_line(),
             byte  => {
-                if self.column >= BUFFER_SIZE.0 {
+                if (self.column >= BUFFER_SIZE.0) {
                     self.new_line();
                 }
 
@@ -88,9 +91,9 @@ impl ScreenWriter {
     }
     fn _write_str(&mut self, s : &str) {
         for byte in s.bytes() {
-            match byte {
+            match (byte) {
                 0x20..=0x7e | b'\n' => self.write_byte(byte),
-                _ => self.write_byte(0xfe),
+                _                   => self.write_byte(0xfe),
             }
 
         }
@@ -134,7 +137,6 @@ pub macro print {
 }
 #[doc(hidden)]
 pub fn _print(args : fmt::Arguments) {
-    use core::fmt::Write;
     interrupts::without_interrupts(|| {
         WRITER.lock().write_fmt(args).unwrap();
     });
@@ -146,4 +148,13 @@ pub macro colour {
     ($fg:ident, $bg:ident) => {
         WRITER.lock().set_colour(Colour::$fg, Colour::$bg);
     }
+}
+
+#[macro_export]
+pub macro format {
+    ($($arg:tt)*) => ($crate::vga::_format(format_args!($($arg)*)))
+}
+#[doc(hidden)]
+pub fn _format(args : fmt::Arguments) -> &str {
+    return args.as_str().unwrap();
 }

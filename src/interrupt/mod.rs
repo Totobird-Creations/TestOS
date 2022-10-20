@@ -1,5 +1,3 @@
-use core::iter::Chain;
-
 use x86_64::{
     VirtAddr,
     structures::{
@@ -29,6 +27,7 @@ use spin::Mutex;
 
 mod breakpoint;
 mod double_fault;
+mod page_fault;
 mod timer;
 mod keyboard;
 
@@ -43,6 +42,7 @@ lazy_static! {
         let mut idt = InterruptDescriptorTable::new();
         breakpoint   ::setup(&mut idt);
         double_fault ::setup(&mut idt);
+        page_fault   ::setup(&mut idt);
         timer        ::setup(&mut idt);
         keyboard     ::setup(&mut idt);
         idt

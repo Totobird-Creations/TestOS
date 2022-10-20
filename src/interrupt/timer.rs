@@ -3,7 +3,6 @@ use x86_64::structures::idt::{
     InterruptStackFrame
 };
 
-use crate::vga;
 use super::{
     PICS,
     InterruptIndex
@@ -18,7 +17,6 @@ pub fn setup(idt : &mut InterruptDescriptorTable) {
 }
 
 extern "x86-interrupt" fn handler(_stack_frame : InterruptStackFrame) {
-    vga::print!(".");
     unsafe {
         PICS.lock().notify_end_of_interrupt(INDEX.as_u8())
     }
