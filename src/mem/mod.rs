@@ -25,7 +25,7 @@ use self::allocator::{
     HEAP_SIZE
 };
 
-mod allocator;
+pub mod allocator;
 
 
 static mut MAPPER          : Option<OffsetPageTable>              = None;

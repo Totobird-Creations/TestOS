@@ -139,6 +139,7 @@ pub macro print {
 pub fn _print(args : fmt::Arguments) {
     interrupts::without_interrupts(|| {
         WRITER.lock().write_fmt(args).unwrap();
+        crate::test::serial::SERIAL1.lock().write_fmt(args).expect("Serial write failed.");
     });
 }
 pub macro colour {

@@ -15,7 +15,7 @@
 #![feature(custom_test_frameworks)]
 #![test_runner(crate::test::runner)]
 #![reexport_test_harness_main = "init_test"]
-mod test;
+pub mod test;
 
 
 extern crate core;
@@ -28,6 +28,7 @@ extern crate lazy_static;
 extern crate bootloader;
 extern crate alloc;
 extern crate linked_list_allocator;
+extern crate uart_16550;
 
 use core::panic::{PanicInfo, Location};
 
@@ -41,12 +42,12 @@ mod vga;
 mod interrupt;
 mod init;
 mod info;
-mod mem;
+pub mod mem;
 
 
 // Freeze and do nothing on panic.
 #[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
+pub fn panic(info: &PanicInfo) -> ! {
     vga::colour!();
     vga::print!("\n");
     vga::colour!(White, Red);
@@ -77,11 +78,8 @@ fn panic(info: &PanicInfo) -> ! {
 
 // Entry
 entry_point!(entry);
-pub fn entry(info : &'static BootInfo) -> ! {
-    info::load(info);
-
-    mem::init().unwrap();
-    interrupt::init();
+fn entry(info : &'static BootInfo) -> ! {
+    init(info);
 
     #[cfg(test)]
     init_test();
@@ -91,4 +89,11 @@ pub fn entry(info : &'static BootInfo) -> ! {
     loop {
         instructions::hlt();
     }
+}
+
+pub fn init(info : &'static BootInfo) {
+    info::load(info);
+
+    mem::init().unwrap();
+    interrupt::init();
 }
