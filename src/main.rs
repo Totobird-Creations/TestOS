@@ -1,5 +1,5 @@
 // Following tutorial `https://os.phil-opp.com`
-// Currently at `https://os.phil-opp.com/paging-implementation/#accessing-the-page-tables`
+// Currently at `https://os.phil-opp.com/paging-implementation/#allocating-frames`
 
 #![no_std]
 #![no_main]
@@ -23,6 +23,8 @@ use bootloader::{
 mod vga;
 mod interrupt;
 mod init;
+mod info;
+mod mem;
 
 
 // Freeze and do nothing on panic.
@@ -43,7 +45,9 @@ fn panic(info: &PanicInfo) -> ! {
     );
     vga::print!("{:width$}",
         if let Some(message) = info.message() {
-            message.as_str().unwrap()
+            if let Some(message) = message.as_str() {
+                message
+            } else {""}
         } else {""},
         width=vga::BUFFER_SIZE.0
     );
@@ -57,6 +61,9 @@ fn panic(info: &PanicInfo) -> ! {
 // Entry
 entry_point!(entry);
 pub fn entry(info : &'static BootInfo) -> ! {
+    info::load(info);
+
+    mem::init();
     interrupt::init();
 
     #[cfg(test)]
