@@ -8,6 +8,13 @@ name  = "test_os"
 test  = false
 bench = false
 
+[[test]]
+name    = "heap_alloc"
+harness = false
+[[test]]
+name    = "stack_overflow"
+harness = false
+
 
 [dependencies]
 volatile              = "0.2.6"
@@ -28,6 +35,24 @@ features = [
 version  = "0.9.8"
 features = [
     "map_physical_memory"
+]
+
+[dependencies.crossbeam-queue]
+version          = "0.2"
+default-features = false
+features         = [
+    "alloc"
+]
+
+[dependencies.conquer-once]
+version          = "0.2.0"
+default-features = false
+
+[dependencies.futures-util]
+version          = "0.3"
+default-features = false
+features         = [
+    "alloc"
 ]
 
 

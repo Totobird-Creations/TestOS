@@ -131,7 +131,6 @@ impl fmt::Write for ScreenWriter {
 }
 
 
-#[macro_export]
 pub macro print {
     ($($arg:tt)*) => ($crate::vga::_print(format_args!($($arg)*)))
 }
@@ -151,7 +150,21 @@ pub macro colour {
     }
 }
 
-#[macro_export]
+pub macro warn {
+    ($($arg:tt)*) => {
+        colour!(Yellow, Black);
+        print!($($arg)*);
+        colour!();
+    }
+}
+pub macro error {
+    ($($arg:tt)*) => {
+        colour!(LightRed, Black);
+        print!($($arg)*);
+        colour!();
+    }
+}
+
 pub macro format {
     ($($arg:tt)*) => ($crate::vga::_format(format_args!($($arg)*)))
 }

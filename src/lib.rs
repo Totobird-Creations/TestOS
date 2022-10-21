@@ -18,31 +18,20 @@
 pub mod test;
 
 
-extern crate core;
-extern crate volatile;
-extern crate spin;
-extern crate x86_64;
-extern crate pic8259;
-extern crate pc_keyboard;
-extern crate lazy_static;
-extern crate bootloader;
 extern crate alloc;
-extern crate linked_list_allocator;
-extern crate uart_16550;
+
 
 use core::panic::{PanicInfo, Location};
 
 use x86_64::instructions;
-use bootloader::{
-    BootInfo,
-    entry_point
-};
+use bootloader::BootInfo;
 
-mod vga;
-mod interrupt;
-mod init;
-mod info;
+pub mod vga;
+mod     interrupt;
+pub mod init;
+mod     info;
 pub mod mem;
+mod     tasks;
 
 
 // Freeze and do nothing on panic.
@@ -75,21 +64,6 @@ pub fn panic(info: &PanicInfo) -> ! {
     }
 }
 
-
-// Entry
-entry_point!(entry);
-fn entry(info : &'static BootInfo) -> ! {
-    init(info);
-
-    #[cfg(test)]
-    init_test();
-
-    init::main();
-
-    loop {
-        instructions::hlt();
-    }
-}
 
 pub fn init(info : &'static BootInfo) {
     info::load(info);
