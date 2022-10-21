@@ -1,9 +1,15 @@
 // Following tutorial `https://os.phil-opp.com`
-// Currently at `https://os.phil-opp.com/paging-implementation/#allocating-frames`
+// Currently at `https://os.phil-opp.com/heap-allocation/#adding-a-test`
 
 #![no_std]
 #![no_main]
-#![feature(decl_macro, abi_x86_interrupt, let_chains, panic_info_message)]
+#![feature(
+    decl_macro,
+    abi_x86_interrupt,
+    let_chains,
+    panic_info_message,
+    alloc_error_handler
+)]
 #![allow(unused_parens)]
 
 #![feature(custom_test_frameworks)]
@@ -11,6 +17,17 @@
 #![reexport_test_harness_main = "init_test"]
 mod test;
 
+
+extern crate core;
+extern crate volatile;
+extern crate spin;
+extern crate x86_64;
+extern crate pic8259;
+extern crate pc_keyboard;
+extern crate lazy_static;
+extern crate bootloader;
+extern crate alloc;
+extern crate linked_list_allocator;
 
 use core::panic::{PanicInfo, Location};
 
@@ -63,7 +80,7 @@ entry_point!(entry);
 pub fn entry(info : &'static BootInfo) -> ! {
     info::load(info);
 
-    mem::init();
+    mem::init().unwrap();
     interrupt::init();
 
     #[cfg(test)]
