@@ -8,13 +8,6 @@ name  = "test_os"
 test  = false
 bench = false
 
-[[test]]
-name    = "heap_alloc"
-harness = false
-[[test]]
-name    = "stack_overflow"
-harness = false
-
 
 [dependencies]
 volatile              = "0.2.6"
@@ -58,8 +51,9 @@ features         = [
 
 [package.metadata.bootimage]
 test-args              = [
-    "-device" , "isa-debug-exit,iobase=0xf4,iosize=0x04",
-    "-serial" , "stdio"
+    "-device"  , "isa-debug-exit,iobase=0xf4,iosize=0x04",
+    "-serial"  , "stdio",
+    "-display" , "none"
 ]
 test-success-exit-code = 33
 test-timeout           = 300

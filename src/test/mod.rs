@@ -2,6 +2,7 @@ use core::any::type_name;
 
 use crate::vga;
 
+pub mod qemu;
 pub mod serial;
 
 
@@ -13,6 +14,10 @@ pub fn runner(tests : &[&dyn Testable]) {
     for i in 0..tests.len() {
         tests[i].run();
     }
+    vga::colour!(LightCyan, Black);
+    vga::print!("Done.");
+    vga::colour!();
+    vga::print!("\n");
 }
 
 pub trait Testable {
@@ -27,6 +32,7 @@ impl <T> Testable for T
         vga::colour!(DarkGray, Black);
         vga::print!(" ... ");
         vga::colour!();
+        self();
         vga::colour!(LightGreen, Black);
         vga::print!("[OK]");
         vga::colour!();

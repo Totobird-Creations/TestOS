@@ -13,10 +13,6 @@ use test_os::init;
 entry_point!(entry);
 fn entry(info : &'static BootInfo) -> ! {
     init(info);
-
-    #[cfg(test)]
-    init_test();
-
     init::main();
 
     loop {

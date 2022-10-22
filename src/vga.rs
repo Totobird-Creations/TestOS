@@ -14,7 +14,7 @@ pub const BUFFER_SIZE : (usize, usize) = (80, 25);
 lazy_static! {
     pub static ref WRITER : Mutex<ScreenWriter> = Mutex::new(ScreenWriter {
         column : 0,
-        colour : ColourCode::new(Colour::White, Colour::Black),
+        colour : (Colour::White, Colour::Black),
         buffer : unsafe {&mut *(0xb8000 as *mut ScreenBuffer)},
     });
 }
@@ -24,22 +24,64 @@ lazy_static! {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Colour {
-    Black      = 0,
-    Blue       = 1,
-    Green      = 2,
-    Cyan       = 3,
-    Red        = 4,
-    Magenta    = 5,
-    Brown      = 6,
-    LightGray  = 7,
-    DarkGray   = 8,
-    LightBlue  = 9,
-    LightGreen = 10,
-    LightCyan  = 11,
-    LightRed   = 12,
-    Pink       = 13,
-    Yellow     = 14,
-    White      = 15
+    Black        = 0,
+    Blue         = 1,
+    Green        = 2,
+    Cyan         = 3,
+    Red          = 4,
+    Magenta      = 5,
+    Brown        = 6,
+    LightGray    = 7,
+    DarkGray     = 8,
+    LightBlue    = 9,
+    LightGreen   = 10,
+    LightCyan    = 11,
+    LightRed     = 12,
+    LightMagenta = 13,
+    Yellow       = 14,
+    White        = 15
+}
+impl Colour {
+    fn to_esc_fg(&self) -> &str {
+        return match (self) {
+            Colour::Black        => "\x1b[38;2;0;0;0m",
+            Colour::Blue         => "\x1b[38;2;0;0;170m",
+            Colour::Green        => "\x1b[38;2;0;170;0m",
+            Colour::Cyan         => "\x1b[38;2;0;170;170m",
+            Colour::Red          => "\x1b[38;2;170;0s;0m",
+            Colour::Magenta      => "\x1b[38;2;170;0;170m",
+            Colour::Brown        => "\x1b[38;2;170;85;0m",
+            Colour::LightGray    => "\x1b[38;2;170;170;170m",
+            Colour::DarkGray     => "\x1b[38;2;85;85;85m",
+            Colour::LightBlue    => "\x1b[38;2;85;85;255m",
+            Colour::LightGreen   => "\x1b[38;2;85;255;85m",
+            Colour::LightCyan    => "\x1b[38;2;85;255;255m",
+            Colour::LightRed     => "\x1b[38;2;255;85;85m",
+            Colour::LightMagenta => "\x1b[38;2;255;85;255m",
+            Colour::Yellow       => "\x1b[38;2;255;255;85m",
+            Colour::White        => "\x1b[38;2;255;255;255m",
+        }
+    }
+    fn to_esc_bg(&self) -> &str {
+        return match (self) {
+            Colour::Black        => "\x1b[48;2;0;0;0m",
+            Colour::Blue         => "\x1b[48;2;0;0;170m",
+            Colour::Green        => "\x1b[48;2;0;170;0m",
+            Colour::Cyan         => "\x1b[48;2;0;170;170m",
+            Colour::Red          => "\x1b[48;2;170;0s;0m",
+            Colour::Magenta      => "\x1b[48;2;170;0;170m",
+            Colour::Brown        => "\x1b[48;2;170;85;0m",
+            Colour::LightGray    => "\x1b[48;2;170;170;170m",
+            Colour::DarkGray     => "\x1b[48;2;85;85;85m",
+            Colour::LightBlue    => "\x1b[48;2;85;85;255m",
+            Colour::LightGreen   => "\x1b[48;2;85;255;85m",
+            Colour::LightCyan    => "\x1b[48;2;85;255;255m",
+            Colour::LightRed     => "\x1b[48;2;255;85;85m",
+            Colour::LightMagenta => "\x1b[48;2;255;85;255m",
+            Colour::Yellow       => "\x1b[48;2;255;255;85m",
+            Colour::White        => "\x1b[48;2;255;255;255m",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -64,9 +106,9 @@ struct ScreenBuffer {
 }
 
 pub struct ScreenWriter {
-    column  : usize,
-    colour  : ColourCode,
-    buffer  : &'static mut ScreenBuffer,
+        column : usize,
+    pub colour : (Colour, Colour),
+        buffer : &'static mut ScreenBuffer,
 }
 #[allow(unused)]
 impl ScreenWriter {
@@ -83,7 +125,7 @@ impl ScreenWriter {
 
                 self.buffer.chars[y][x].write(BufferChar {
                     character : byte,
-                    colour    : self.colour,
+                    colour    : ColourCode::new(self.colour.0, self.colour.1),
                 });
                 self.column += 1;
             }
@@ -112,7 +154,7 @@ impl ScreenWriter {
     fn clear_row(&mut self, y : usize) {
         let blank = BufferChar {
             character : b' ',
-            colour    : self.colour
+            colour    : ColourCode::new(self.colour.0, self.colour.1)
         };
         for x in 0..BUFFER_SIZE.0 {
             self.buffer.chars[y][x].write(blank);
@@ -120,7 +162,7 @@ impl ScreenWriter {
     }
 
     pub fn set_colour(&mut self, fg : Colour, bg : Colour) {
-        self.colour = ColourCode::new(fg, bg);
+        self.colour = (fg, bg);
     }
 }
 impl fmt::Write for ScreenWriter {
@@ -137,8 +179,16 @@ pub macro print {
 #[doc(hidden)]
 pub fn _print(args : fmt::Arguments) {
     interrupts::without_interrupts(|| {
-        WRITER.lock().write_fmt(args).unwrap();
-        crate::test::serial::SERIAL1.lock().write_fmt(args).expect("Serial write failed.");
+        let mut writer = WRITER.lock();
+        writer.write_fmt(args).unwrap();
+        #[cfg(test)]
+        {
+            let mut serial1 = crate::test::serial::SERIAL1.lock();
+            serial1.write_str(writer.colour.0.to_esc_fg()).expect("Serial write failed.");
+            serial1.write_str(writer.colour.1.to_esc_bg()).expect("Serial write failed.");
+            serial1.write_fmt(args).expect("Serial write failed.");
+            serial1.write_str("\x1b[39m").expect("Serial write failed.");
+        }
     });
 }
 pub macro colour {
@@ -153,14 +203,18 @@ pub macro colour {
 pub macro warn {
     ($($arg:tt)*) => {
         colour!(Yellow, Black);
+        print!("WARN  ");
         print!($($arg)*);
+        print!("\n");
         colour!();
     }
 }
 pub macro error {
     ($($arg:tt)*) => {
         colour!(LightRed, Black);
+        print!("ERROR ");
         print!($($arg)*);
+        print!("\n");
         colour!();
     }
 }

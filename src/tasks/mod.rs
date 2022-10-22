@@ -4,12 +4,7 @@ use core::task::{
     Poll,
 };
 
-use x86_64::{
-    instructions::{
-        self,
-        interrupts
-    }
-};
+use x86_64::instructions::interrupts;
 use alloc::{
     collections::BTreeMap,
     sync::Arc,

@@ -23,8 +23,11 @@ extern crate alloc;
 
 use core::panic::{PanicInfo, Location};
 
+#[cfg(not(test))]
 use x86_64::instructions;
 use bootloader::BootInfo;
+#[cfg(test)]
+use bootloader::entry_point;
 
 pub mod vga;
 mod     interrupt;
@@ -34,7 +37,7 @@ pub mod mem;
 mod     tasks;
 
 
-// Freeze and do nothing on panic.
+#[cfg(not(test))]
 #[panic_handler]
 pub fn panic(info: &PanicInfo) -> ! {
     vga::colour!();
@@ -62,6 +65,36 @@ pub fn panic(info: &PanicInfo) -> ! {
     loop {
         instructions::hlt();
     }
+}
+#[cfg(test)]
+#[panic_handler]
+pub fn panic(info: &PanicInfo) -> ! {
+    vga::print!("\n");
+    vga::print!("KERNEL PANICKED\n");
+    vga::print!("at {}\n",
+        if let Some(location) = info.location() {
+            location
+        } else {Location::caller()}
+    );
+    vga::print!("{}\n",
+        if let Some(message) = info.message() {
+            if let Some(message) = message.as_str() {
+                message
+            } else {""}
+        } else {""}
+    );
+    test::qemu::exit(test::qemu::QemuExitCode::Failure);
+}
+
+
+#[cfg(test)]
+entry_point!(entry);
+#[cfg(test)]
+fn entry(info : &'static BootInfo) -> ! {
+    init(info);
+    init::test();
+
+    test::qemu::exit(test::qemu::QemuExitCode::Success);
 }
 
 

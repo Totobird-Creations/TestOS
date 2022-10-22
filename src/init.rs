@@ -12,16 +12,22 @@ pub fn main() {
     vga::colour!();
     vga::print!("\n");
 
+    vga::colour!(LightMagenta, Magenta);
+    vga::print!("Third line.");
+    vga::colour!();
+    vga::print!("\n");
+
     let mut executor = crate::tasks::Executor::new();
     executor.spawn(crate::tasks::task::Task::new(example_task()));
     executor.spawn(crate::tasks::task::Task::new(crate::tasks::task::keyboard::print_keypresses()));
     executor.run();
 
-    vga::colour!(Pink, Magenta);
-    vga::print!("Third line.");
-    vga::colour!();
-    vga::print!("\n");
+}
 
+
+#[cfg(test)]
+pub fn test() {
+    crate::init_test();
 }
 
 
