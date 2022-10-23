@@ -18,6 +18,10 @@ pub fn setup(idt : &mut InterruptDescriptorTable) {
 
 
 extern "x86-interrupt" fn handler(stack_frame : InterruptStackFrame, error_code : u64) -> ! {
-    vga::error!("EXCEPTION : DOUBLE FAULT {}\n{:#?}\n", error_code, stack_frame);
-    panic!();
+    vga::error!("DOUBLE FAULT {}", error_code);
+    vga::colour!(LightRed, Black);
+    vga::println!("{:#?}", stack_frame);
+    vga::colour!();
+    vga::print!("\n");
+    panic!("A double fault error occured.");
 }

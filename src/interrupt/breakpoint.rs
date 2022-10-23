@@ -12,5 +12,9 @@ pub fn setup(idt : &mut InterruptDescriptorTable) {
 
 
 extern "x86-interrupt" fn handler(stack_frame : InterruptStackFrame) {
-    vga::error!("EXCEPTION : BREAKPOINT\n{:#?}\n", stack_frame);
+    vga::error!("BREAKPOINT");
+    vga::colour!(LightRed, Black);
+    vga::println!("{:#?}", stack_frame);
+    vga::colour!();
+    vga::print!("\n");
 }

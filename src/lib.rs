@@ -23,11 +23,7 @@ extern crate alloc;
 
 use core::panic::{PanicInfo, Location};
 
-#[cfg(not(test))]
-use x86_64::instructions;
 use bootloader::BootInfo;
-#[cfg(test)]
-use bootloader::entry_point;
 
 pub mod vga;
 mod     interrupt;
@@ -37,62 +33,69 @@ pub mod mem;
 mod     tasks;
 
 
-#[cfg(not(test))]
 #[panic_handler]
-pub fn panic(info: &PanicInfo) -> ! {
-    vga::colour!();
-    vga::print!("\n");
-    vga::colour!(White, Red);
-    vga::print!("{:width$}\n",
-        "KERNEL PANICKED",
-        width=vga::BUFFER_SIZE.0
-    );
-    vga::print!("at {:width$}\n",
-        if let Some(location) = info.location() {
-            location
-        } else {Location::caller()},
-        width=(vga::BUFFER_SIZE.0 -3)
-    );
-    vga::print!("{:width$}",
-        if let Some(message) = info.message() {
-            if let Some(message) = message.as_str() {
-                message
+pub fn panic(info : &PanicInfo) -> ! {
+    if (info::expect_panic()) {
+
+        vga::colour!(Green, Black);
+        vga::println!("KERNEL CORRECTLY PANICKED");
+        vga::println!("at {}",
+            if let Some(location) = info.location() {
+                location
+            } else {Location::caller()}
+        );
+        vga::println!("{}",
+            if let Some(message) = info.message() {
+                if let Some(message) = message.as_str() {
+                    message
+                } else {""}
             } else {""}
-        } else {""},
-        width=vga::BUFFER_SIZE.0
-    );
-    vga::colour!();
-    loop {
-        instructions::hlt();
+        );
+        vga::print!("\n");
+        vga::colour!(LightGreen, Black);
+        vga::print!("[OK]");
+        vga::colour!();
+        vga::colour!(LightCyan, Black);
+        vga::println!("Done.");
+
+    } else {
+
+        vga::colour!();
+        vga::println!();
+        vga::colour!(White, Red);
+        vga::println!("KERNEL PANICKED");
+        vga::println!("at {}",
+            if let Some(location) = info.location() {
+                location
+            } else {Location::caller()}
+        );
+        vga::println!("{}",
+            if let Some(message) = info.message() {
+                if let Some(message) = message.as_str() {
+                    message
+                } else {""}
+            } else {""}
+        );
+        
     }
-}
-#[cfg(test)]
-#[panic_handler]
-pub fn panic(info: &PanicInfo) -> ! {
+    vga::colour!();
     vga::print!("\n");
-    vga::print!("KERNEL PANICKED\n");
-    vga::print!("at {}\n",
-        if let Some(location) = info.location() {
-            location
-        } else {Location::caller()}
-    );
-    vga::print!("{}\n",
-        if let Some(message) = info.message() {
-            if let Some(message) = message.as_str() {
-                message
-            } else {""}
-        } else {""}
-    );
-    test::qemu::exit(test::qemu::QemuExitCode::Failure);
+    test::qemu::exit(if (info::expect_panic()) {
+        test::qemu::QemuExitCode::Success
+    } else {
+        test::qemu::QemuExitCode::Failure
+    });
 }
 
 
 #[cfg(test)]
-entry_point!(entry);
+use bootloader;
+#[cfg(test)]
+bootloader::entry_point!(entry);
 #[cfg(test)]
 fn entry(info : &'static BootInfo) -> ! {
     init(info);
-    init::test();
+    init_test();
 
     test::qemu::exit(test::qemu::QemuExitCode::Success);
 }
@@ -103,4 +106,11 @@ pub fn init(info : &'static BootInfo) {
 
     mem::init().unwrap();
     interrupt::init();
+
+    //tasks::init();
+}
+
+pub fn init_expect_panic(info : &'static BootInfo) {
+    unsafe {info::EXPECT_PANIC = true};
+    init(info);
 }

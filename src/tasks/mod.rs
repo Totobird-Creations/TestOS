@@ -11,12 +11,26 @@ use alloc::{
     task::Wake
 };
 use crossbeam_queue::ArrayQueue;
+use lazy_static::lazy_static;
+use spin::Mutex;
 
 pub mod task;
 use task::{
     Task,
     TaskId
 };
+
+
+lazy_static! {
+    pub static ref EXECUTOR : Mutex<Executor> = Mutex::new(Executor::new());
+}
+
+
+pub fn init() {
+    let mut executor = EXECUTOR.lock();
+    executor.spawn(crate::tasks::task::Task::new(crate::tasks::task::keyboard::print_keypresses()));
+    executor.run();
+}
 
 
 pub struct Executor {
@@ -75,6 +89,7 @@ impl Executor {
         }
     }
 }
+unsafe impl Send for Executor {}
 
 
 struct TaskWaker {

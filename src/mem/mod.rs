@@ -28,7 +28,7 @@ use self::allocator::{
 pub mod allocator;
 
 
-static mut MAPPER          : Option<OffsetPageTable>              = None;
+static mut MAPPER          : Option<OffsetPageTable>   = None;
 static mut FRAME_ALLOCATOR : Option<MemFrameAllocator> = None;
 
 

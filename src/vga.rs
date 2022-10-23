@@ -7,6 +7,9 @@ use volatile::Volatile;
 use lazy_static::lazy_static;
 use spin::Mutex;
 use x86_64::instructions::interrupts;
+use alloc::string::String;
+
+use crate::info::expect_panic;
 
 
 pub const BUFFER_SIZE : (usize, usize) = (80, 25);
@@ -42,7 +45,7 @@ pub enum Colour {
     White        = 15
 }
 impl Colour {
-    fn to_esc_fg(&self) -> &str {
+    pub fn to_esc_fg(&self) -> &str {
         return match (self) {
             Colour::Black        => "\x1b[38;2;0;0;0m",
             Colour::Blue         => "\x1b[38;2;0;0;170m",
@@ -62,13 +65,13 @@ impl Colour {
             Colour::White        => "\x1b[38;2;255;255;255m",
         }
     }
-    fn to_esc_bg(&self) -> &str {
+    pub fn to_esc_bg(&self) -> &str {
         return match (self) {
             Colour::Black        => "\x1b[48;2;0;0;0m",
             Colour::Blue         => "\x1b[48;2;0;0;170m",
             Colour::Green        => "\x1b[48;2;0;170;0m",
             Colour::Cyan         => "\x1b[48;2;0;170;170m",
-            Colour::Red          => "\x1b[48;2;170;0s;0m",
+            Colour::Red          => "\x1b[48;2;170;0;0m",
             Colour::Magenta      => "\x1b[48;2;170;0;170m",
             Colour::Brown        => "\x1b[48;2;170;85;0m",
             Colour::LightGray    => "\x1b[48;2;170;170;170m",
@@ -166,30 +169,92 @@ impl ScreenWriter {
     }
 }
 impl fmt::Write for ScreenWriter {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
+    fn write_str(&mut self, s : &str) -> fmt::Result {
         self._write_str(s);
-        Ok(())
+        return Ok(());
+    }
+}
+
+pub struct Writable(String);
+impl Writable {
+    pub fn new() -> Writable {
+        return Writable(String::new());
+    }
+    pub fn unwrap<'l>(self) -> String {
+        return self.0;
+    }
+}
+impl fmt::Write for Writable {
+    fn write_str(&mut self, s : &str) -> fmt::Result {
+        self.0 += s;
+        return Ok(());
     }
 }
 
 
-pub macro print {
-    ($($arg:tt)*) => ($crate::vga::_print(format_args!($($arg)*)))
-}
-#[doc(hidden)]
-pub fn _print(args : fmt::Arguments) {
-    interrupts::without_interrupts(|| {
-        let mut writer = WRITER.lock();
-        writer.write_fmt(args).unwrap();
-        #[cfg(test)]
-        {
+pub macro println {
+    () => {
+        $crate::vga::println!("");
+    },
+    ($($arg:tt)*) => {{
+        interrupts::without_interrupts(|| {
+            let mut writable = Writable::new();
+            writable.write_fmt(format_args!($($arg)*)).unwrap();
+            let     written = writable.unwrap();
+            let     lines   = written.split("\n");
+            let mut writer  = WRITER.lock();
             let mut serial1 = crate::test::serial::SERIAL1.lock();
-            serial1.write_str(writer.colour.0.to_esc_fg()).expect("Serial write failed.");
-            serial1.write_str(writer.colour.1.to_esc_bg()).expect("Serial write failed.");
-            serial1.write_fmt(args).expect("Serial write failed.");
-            serial1.write_str("\x1b[39m").expect("Serial write failed.");
-        }
-    });
+            for line in lines {
+
+                write!(writer, "\n").unwrap();
+                write!(writer, "{:width$}",
+                    line, width=
+                        if (line.len() >= BUFFER_SIZE.0) {
+                            ((line.len() - 1) / (BUFFER_SIZE.0 + 1))
+                        } else {
+                            BUFFER_SIZE.0
+                        }
+                ).unwrap();
+
+                if (expect_panic()) {
+                    write!(serial1, "\n").unwrap();
+                    write!(serial1, "{}{}{:width$}\x1b[0m",
+                        writer.colour.0.to_esc_fg(),
+                        writer.colour.1.to_esc_bg(),
+                        line, width=
+                            if (line.len() >= BUFFER_SIZE.0) {
+                                ((line.len() - 1) / (BUFFER_SIZE.0 + 1))
+                            } else {
+                                BUFFER_SIZE.0
+                            }
+                    ).unwrap();
+                }
+
+            }
+        });
+    }}
+}
+pub macro print {
+    ($($arg:tt)*) => {{
+        interrupts::without_interrupts(|| {
+            let mut writable = Writable::new();
+            writable.write_fmt(format_args!($($arg)*)).unwrap();
+            let     written = writable.unwrap();
+            let mut writer  = WRITER.lock();
+            let mut serial1 = crate::test::serial::SERIAL1.lock();
+
+            write!(writer, "{}", written).unwrap();
+
+            if (expect_panic()) {
+                write!(serial1, "{}{}{}\x1b[0m",
+                    writer.colour.0.to_esc_fg(),
+                    writer.colour.1.to_esc_bg(),
+                    written
+                ).unwrap();
+            }
+
+        });
+    }}
 }
 pub macro colour {
     () => {
@@ -202,19 +267,21 @@ pub macro colour {
 
 pub macro warn {
     ($($arg:tt)*) => {
+        colour!();
         colour!(Yellow, Black);
-        print!("WARN  ");
-        print!($($arg)*);
         print!("\n");
+        print!("WARNING : ");
+        print!($($arg)*);
         colour!();
     }
 }
 pub macro error {
     ($($arg:tt)*) => {
+        colour!();
         colour!(LightRed, Black);
-        print!("ERROR ");
-        print!($($arg)*);
         print!("\n");
+        print!("EXCEPTION : ");
+        print!($($arg)*);
         colour!();
     }
 }

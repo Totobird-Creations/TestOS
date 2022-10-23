@@ -62,12 +62,12 @@ impl Stream for ScancodeStream {
 pub fn add_scancode(scancode : u8) {
     if let Ok(queue) = SCANCODE_QUEUE.try_get() {
         if let Err(_) = queue.push(scancode) {
-            vga::warn!("scancode queue full, dropping keyboard input.");
+            vga::warn!("scancode queue full.");
         } else {
             WAKER.wake();
         }
     } else {
-        vga::warn!("scancode queue full uninitialised.");
+        vga::warn!("scancode queue uninitialised.");
     }
 }
 

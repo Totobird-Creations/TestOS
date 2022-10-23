@@ -53,6 +53,10 @@ pub static ALLOCATOR : LockedHeap = LockedHeap::empty();
 
 #[alloc_error_handler]
 fn alloc_error_handler(layout : Layout) -> ! {
-    vga::error!("EXCEPTION : ALLOCATION {:?}\n", layout);
-    panic!();
+    vga::error!("ALLOCATION FAULT");
+    vga::colour!(LightRed, Black);
+    vga::println!("{:#?}", layout);
+    vga::colour!();
+    vga::print!("\n");
+    panic!("An allocation error occured.");
 }

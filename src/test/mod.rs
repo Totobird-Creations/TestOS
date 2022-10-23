@@ -1,6 +1,7 @@
 use core::any::type_name;
 
 use crate::vga;
+use crate::info::expect_panic;
 
 pub mod qemu;
 pub mod serial;
@@ -8,15 +9,16 @@ pub mod serial;
 
 pub fn runner(tests : &[&dyn Testable]) {
     vga::colour!(LightCyan, Black);
-    vga::print!("Running {} tests.", tests.len());
+    vga::println!("Running {} tests.", tests.len());
     vga::colour!();
-    vga::print!("\n");
     for i in 0..tests.len() {
         tests[i].run();
     }
-    vga::colour!(LightCyan, Black);
-    vga::print!("Done.");
-    vga::colour!();
+    if (! expect_panic()) {
+        vga::colour!(LightCyan, Black);
+        vga::println!("Done.");
+        vga::colour!();
+    }
     vga::print!("\n");
 }
 
@@ -28,15 +30,17 @@ impl <T> Testable for T
 {
     fn run(&self) {
         vga::colour!(Cyan, Black);
+        vga::print!("\n");
         vga::print!("{}", type_name::<T>());
         vga::colour!(DarkGray, Black);
         vga::print!(" ... ");
         vga::colour!();
         self();
-        vga::colour!(LightGreen, Black);
-        vga::print!("[OK]");
-        vga::colour!();
-        vga::print!("\n");
+        if (! expect_panic()) {
+            vga::colour!(LightGreen, Black);
+            vga::print!("[OK]");
+            vga::colour!();
+        }
     }
 }
 
@@ -51,12 +55,8 @@ fn test_vga_buffer() {
 }
 
 #[test_case]
-fn test_exceptions() {
-    // CPU Interrupt
-    //x86_64::instructions::interrupts::int3();
-    // Double Fault
-    //unsafe {
-    //    *(0xbadbadbad as *mut u64) = 42;
-    //};
-    // TODO : Stack overflow test
+fn test_breakpoint() {
+    use x86_64::instructions::interrupts;
+    vga::warn!("A BREAKPOINT ERROR IS EXPECTED HERE:");
+    interrupts::int3();
 }

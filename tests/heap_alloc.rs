@@ -23,7 +23,6 @@ use test_os::{
 entry_point!(entry);
 fn entry(info : &'static BootInfo) -> ! {
     init(info);
-
     init_test();
 
     qemu::exit(qemu::QemuExitCode::Success);
@@ -34,7 +33,6 @@ fn entry(info : &'static BootInfo) -> ! {
 #[test_case]
 fn test_simple_alloc() {
     use alloc::boxed::Box;
-    test_os::vga::print!("run");
     let heap_value_1 = Box::new(41);
     let heap_value_2 = Box::new(13);
     assert_eq!(*heap_value_1, 41);

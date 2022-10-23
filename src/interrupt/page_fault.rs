@@ -16,8 +16,11 @@ pub fn setup(idt : &mut InterruptDescriptorTable) {
 
 
 extern "x86-interrupt" fn handler(stack_frame : InterruptStackFrame, error_code : PageFaultErrorCode) {
-    vga::error!("EXCEPTION : PAGE FAULT - {:?}\n", error_code);
-    vga::error!("            ADDRESS    - {:?}\n", Cr2::read());
-    vga::error!("{:#?}\n", stack_frame);
-    panic!();
+    vga::error!("PAGE FAULT - {:?}", error_code);
+    vga::error!("ADDRESS    - {:?}", Cr2::read());
+    vga::colour!(LightRed, Black);
+    vga::println!("{:#?}", stack_frame);
+    vga::colour!();
+    vga::print!("\n");
+    panic!("A page fault error occured.");
 }

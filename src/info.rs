@@ -5,6 +5,9 @@ use bootloader::{
 };
 
 
+pub static mut EXPECT_PANIC : bool = false;
+
+
 static mut INFO        : Option<&'static BootInfo>  = None;
 static mut PHYS_OFFSET : Option<VirtAddr>           = None;
 static mut MEMORY_MAP  : Option<&'static MemoryMap> = None;
@@ -20,6 +23,10 @@ pub fn load(info : &'static BootInfo) {
     }
 }
 
+
+pub fn expect_panic() -> bool {
+    return unsafe {EXPECT_PANIC};
+}
 
 pub fn phys_offset() -> VirtAddr {
     return unsafe {PHYS_OFFSET}.unwrap();
